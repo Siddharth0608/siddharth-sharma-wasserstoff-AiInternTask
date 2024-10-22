@@ -13,8 +13,8 @@ import nltk
 from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
 import string
-nltk.download('stopwords')
-nltk.download('punkt')
+nltk.download('stopwords', quiet = True)
+nltk.download('punkt', quiet = True)
 from pymongo.mongo_client import MongoClient
 from pymongo.server_api import ServerApi
 from pymongo import errors
@@ -47,6 +47,17 @@ class MongoDBHandler:
             print("Successfully connected to MongoDB!")
         except errors.ConnectionFailure as e:
             print(f"Failed to connect to MongoDB: {e}")
+            
+    def get_all_data(self):
+        # Retrieve all documents from the collection and return them as a list of dictionaries
+        try:
+            all_data = list(self.collection.find({}))  # Retrieve all documents
+            for document in all_data:
+                document['_id'] = str(document['_id'])  # Convert ObjectId to string
+            return all_data  # Return the documents as a list of dictionaries
+        except errors.PyMongoError as e:
+            print(f"Error retrieving data from MongoDB: {e}")
+            return []
 
     def add_metadata(self, data: dict):
         # Insert initial metadata for each PDF
@@ -222,6 +233,13 @@ class PDFPipeline:
     def __init__(self, pdf_folder_path):    
         pipeline = SummaryAndKeywordGenerator(pdf_folder_path)
         pipeline.update_database()
+        
+        # Retrieve all data from MongoDB
+        mongo_handler = MongoDBHandler()
+        all_data = mongo_handler.get_all_data()
+        
+        # You can now work with the retrieved data
+        print(all_data)
         
         
 if __name__ == "__main__":
